@@ -38,17 +38,44 @@ export function ChatInterface() {
     setInput("");
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:8000/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_query: input,
+          user_id: "p123"
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I understand your question. This is a simulated response from Mind Dial. In a real implementation, this would connect to your AI service.",
+        content: data.response || data.question || "I'm sorry, I couldn't process your request.",
         role: "assistant",
         timestamp: new Date(),
       };
+      
       setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error calling FastAPI:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I'm sorry, I'm having trouble connecting to the AI service. Please try again later.",
+        role: "assistant",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
